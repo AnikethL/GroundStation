@@ -116,6 +116,12 @@ const FlightPlanMap = props => {
 			time: new MarkerIcon({ iconUrl: "../assets/icon-time.png" }),
 			path: new MarkerIcon({ iconUrl: "../assets/icon-path.png" }),
 			jump: new MarkerIcon({ iconUrl: "../assets/icon-jump.png" }),
+			highlightMarker_home: new MarkerIcon({iconUrl: "../assets/icon-highlight-waypt.png"}),
+			highlightMarker_unlim: new MarkerIcon({iconUrl: "../assets/icon-highlight-unlim.png"}),
+			highlightMarker_turn: new MarkerIcon({iconUrl: "../assets/icon-highlight-turn.png"}),
+			highlightMarker_time: new MarkerIcon({iconUrl: "../assets/icon-highlight-time.png"}),
+			highlightMarker_path: new MarkerIcon({iconUrl: "../assets/icon-highlight-waypt.png"}),
+			highlightMarker_jump: new MarkerIcon({iconUrl: "../assets/icon-highlight-waypt.png"}),
 			uav: new VehicleIcon({ iconUrl: "../assets/uav.svg" }),
 			uavDirection: new DirectionPointerIcon({ iconUrl: "../assets/pointer.svg" }),
 			uavDirectionOutline: new DirectionPointerIcon({ iconUrl: "../assets/pointer-outline.svg" }),
@@ -297,11 +303,14 @@ const FlightPlanMap = props => {
 		}
 	}
 
+	
+	
+
 	const popup = (latlng, key, datatype, popupMenu, draggable) => {
 		return (
 			<Marker
 				datatype={datatype}
-				icon={icons[datatype]}
+				icon={"highlight" in latlng && latlng["highlight"] ? icons["highlightMarker_"+datatype] : icons[datatype]}
 				position={latlng}
 				eventHandlers={{
 					dragend: (event) => { handleMove(event, key - (props.getters.path[0].num === 0 ? 0 : 1), datatype) },
@@ -311,7 +320,6 @@ const FlightPlanMap = props => {
 				}}
 				onkeydown={event => handleKeyPress(event, key)}
 				draggable={draggable}
-				datatype={datatype}
 				opacity={latlng.opacity}
 			>
 				<Tooltip>
@@ -547,7 +555,7 @@ const FlightPlanMap = props => {
 						<LayerGroup>
 							<PolylineDecorator layer="Waypoints" positions={props.getters.path.filter(marker => marker.cmd !== Commands.jump)} color="#10336B" decoratorColor="#1d5cc2" />
 							{props.getters.path.map((marker, i) => {
-
+								
 								if (marker.cmd === Commands.jump) {
 									let j = i - 1
 									if (!props.getters.path[i - 1].lat) {
@@ -604,4 +612,36 @@ const FlightPlanMap = props => {
 	)
 }
 
+const RecolorImage = ({ src, color }) => {
+	const canvasRef = useRef(null);
+
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		const ctx = canvas.getContext('2d');
+		const image = new Image();
+
+		image.src = src;
+		image.onload = () => {
+			canvas.width = image.width;
+			canvas.height = image.height;
+			ctx.drawImage(image, 0, 0);
+
+			const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+			const data = imageData.data;
+
+			for (let i = 0; i < data.length; i += 4) {
+				if (data[i + 3] > 0) {
+					data[i] = color[0];
+					data[i + 1] = color[1];
+					data[i + 2] = color[2];
+				}
+			}
+
+			ctx.putImageData(imageData, 0, 0);
+		};
+	}, [src, color]);
+
+	return <canvas ref={canvasRef} />;
+};
+  
 export default FlightPlanMap

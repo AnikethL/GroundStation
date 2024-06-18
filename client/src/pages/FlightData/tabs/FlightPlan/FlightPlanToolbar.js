@@ -5,18 +5,23 @@ import { httppost } from "backend"
 
 import { Row, Column, Modal, ModalHeader, ModalBody } from "components/Containers"
 import Commands from "commands"
+import { point } from "leaflet"
 
 const FlightPlanToolbar = props => {
     const [open, setOpen] = useState(false)
     const [missing, setMissing] = useState([])
 
     const [modeText, setModeText] = useState("")
+    const [editableIndex, setEditableIndex] = useState("")
     const [lat, setLat] = useState("")
     const [lon, setLon] = useState("")
     const [alt, setAlt] = useState("")
     const [rad, setRad] = useState("")
     const [turns, setTurns] = useState("")
     const [time, setTime] = useState("")
+    const [modLat, setModLat] = useState("")
+    const [modLon, setModLon] = useState("")
+    const [modAlt, setModAlt] = useState("")
 
     const input1Ref = useRef(null);
     const input2Ref = useRef(null);
@@ -187,6 +192,35 @@ const FlightPlanToolbar = props => {
         input1Ref.current.focus();
     };
 
+    const modPoint = (point) => {
+        if (!(modLat === "" && modLat === "" && modAlt === "")){
+            point.lat = parseFloat(modLat === "" ? point.lat : modLat)
+            point.lng = parseFloat(modLon === "" ? point.lng : modLon)
+            point.alt = parseFloat(modAlt === "" ? point.alt : modAlt)
+            point.opacity = 0.5
+            props.setters.pathSaved(false)
+            setModLat("")
+            setModLon("")
+            setModAlt("")
+        }
+        setEditableIndex("")
+    };
+
+    const deletePoint = (index) => {
+        props.getters.path.splice(index, 1)
+        props.setters.pathSaved(false)
+    }
+
+    const highlightMarker = (point) => {
+        if (!("highlight" in point) | !point["highlight"]){
+            point["highlight"] = true
+        }
+        else{
+            point["highlight"] = false
+        }
+        //delay
+    }
+    
     return (
         <div style={{ marginLeft: 10 }}>
             <Modal open={open} setOpen={setOpen}>
@@ -324,29 +358,81 @@ const FlightPlanToolbar = props => {
                     <Button disabled={!(lat && lon)}   onClick={()=>addWaypoint(lat,lon,alt)}>Plot</Button>
                     
                 </Row>
-                <div style={{ overflow: 'auto', height: '175px', backgroundColor:dark }}>
+                <div style={{ overflow: 'auto', height: '175px', backgroundColor: dark }}>
                     <table>
                         <thead>
-                            <tr>
-                                <th style={{padding:"8px"}}>Latitude</th>
-                                <th style={{padding:"8px"}}>Longitude</th>
-                                <th style={{padding:"8px"}}>Altitude</th>
-                                <th style={{padding:"8px"}}>Type</th>
-                                
-                            </tr>
+                        <tr>
+                            <th style={{ padding: "8px" }}>Point</th>
+                            <th style={{ padding: "8px" }}>Latitude</th>
+                            <th style={{ padding: "8px" }}>Longitude</th>
+                            <th style={{ padding: "8px" }}>Altitude</th>
+                            <th style={{ padding: "8px" }}>Type</th>
+                        </tr>
                         </thead>
-                        <tbody >
-                            {props.getters.path.map((point, index) => (
-                                <tr key={index}>
-                                    <td style={{padding:"8px"}}>{point.lat.toFixed(3)}</td>
-                                    <td style={{padding:"8px"}}>{point.lng.toFixed(3)}</td>
-                                    <td style={{padding:"8px"}}>{point.alt}</td>
-                                    <td style={{padding:"8px"}}>{numToCommands[point.cmd]}</td>
-                                </tr>
-                            ))}
+                        <tbody>
+                        {props.getters.path.map((point, index) => (
+                            <tr key={index}>
+                                <td style={{ padding: "8px" }} onMouseDown={()=>highlightMarker(point)}>{index + 1}</td>
+                                <td style={{ padding: "8px" }}>
+                                    {editableIndex === index ? (
+                                        <input
+                                            type="text"
+                                            onChange={(e) => setModLat(e.target.value)}
+                                            ref={input1Ref}
+                                            defaultValue={point.lat}
+                                        />
+                                    ) : (
+                                        point.lat
+                                    )}
+                                </td>
+                                <td style={{ padding: "8px" }}>
+                                    {editableIndex === index ? (
+                                        <input
+                                            type="text"
+                                            onChange={(e) => setModLon(e.target.value)}
+                                            ref={input2Ref}
+                                            defaultValue={point.lng}
+                                        />
+                                    ) : (
+                                        point.lng
+                                    )}
+                                </td>
+                                <td style={{ padding: "8px" }}>
+                                    {editableIndex === index ? (
+                                        <input
+                                            type="text"
+                                            onChange={(e) => setModAlt(e.target.value)}
+                                            ref={input3Ref}
+                                            defaultValue={point.alt}
+                                        />
+                                    ) : (
+                                        point.alt
+                                    )}
+                                </td>
+                                <td style={{ padding: "8px" }}>
+                                    {numToCommands[point.cmd]}
+                                </td>
+                                <td style={{ padding: "8px" }}>
+                                    <Button onClick={()=>setEditableIndex(index)}>
+                                        Edit
+                                    </Button>
+                                </td>
+                                <td style={{ padding: "8px" }}>
+                                    <Button onClick={()=>modPoint(point)} color="green">
+                                        Save
+                                    </Button>
+                                </td>
+                                <td style={{ padding: "8px" }}>
+                                    <Button onClick={()=>deletePoint(index)} color="red">
+                                        Del
+                                    </Button>
+                                </td>
+                            </tr>
+                        ))}
                         </tbody>
                     </table>
                 </div>
+
                 <br />
                 {props.getters.pathSaved ? <span>&nbsp;</span> :
                     <span style={{ color: red }}>You have unsaved points!</span>
