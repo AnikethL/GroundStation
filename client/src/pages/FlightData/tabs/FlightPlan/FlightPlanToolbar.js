@@ -33,11 +33,6 @@ const FlightPlanToolbar = props => {
     const edit2Ref = useRef(null);
     const edit3Ref = useRef(null);
 
-    const [f1, setF1] = useState("Latitude")
-    const [f2, setF2] = useState("Longitude")
-    const [f3, setF3] = useState("Altitude")
-    const [showJump, setShowJump] = useState(false)
-
     const placementModes = {
         "disabled": "Disabled",
         "push": "Push",
@@ -230,21 +225,7 @@ const FlightPlanToolbar = props => {
         //delay
     }
 
-    const changeTitles = () => {
-        if (!showJump){
-            setF1("Jump From")
-            setF2("Jump To")
-            setF3("Repeat")
-            setShowJump(true)
-        }
-        else{
-            setF1("Latitude")
-            setF2("Longitude")
-            setF3("Altitude")
-            setShowJump(false)
-        }
-    }
-
+    
     return (
         <div style={{ marginLeft: 10 }}>
             <Modal open={open} setOpen={setOpen}>
@@ -387,29 +368,29 @@ const FlightPlanToolbar = props => {
                         <thead>
                             <tr>
                                 <th style={{ padding: "8px" }}>Pt</th>
-                                <th style={{ padding: "8px" }}>{f1}</th>
-                                <th style={{ padding: "8px" }}>{f2}</th>
-                                <th style={{ padding: "8px" }}>{f3}</th>
-                                <th style={{ padding: "8px" }} onMouseDown={()=>changeTitles()}>Type</th>
+                                <th style={{ padding: "8px" }}>Latitude</th>
+                                <th style={{ padding: "8px" }}>Longitude</th>
+                                <th style={{ padding: "8px" }}>Altitude</th>
+                                <th style={{ padding: "8px" }}>Type</th>
                             </tr>
                         </thead>
                         <tbody>
                             {props.getters.path.map((point, index) => {
-                                if (showJump && point.cmd == Commands.jump) {
+                                if (point.cmd == Commands.jump) {
                                     return (
                                         <tr key={index}>
-                                            <td style={{ padding: "2px 8px" }} onMouseDown={()=>highlightMarker(point)}>{index+1}</td>
-                                            <td style={{ padding: "2px 8px" }}>{point.num-1}</td>
-                                            <td style={{ padding: "2px 8px" }}>{point.p1}</td>
-                                            <td style={{ padding: "2px 8px" }}>{point.p2}</td>
+                                            <td style={{ padding: "2px 8px" }} onMouseEnter={()=>point["highlight"]=true} onMouseLeave={()=>point["highlight"]=false}>{index+1}</td>
+                                            <td style={{ padding: "2px 8px" }}>({point.num-1} to {point.p1})</td>
+                                            <td style={{ padding: "2px 26px" }}>{"---"}</td>
+                                            <td style={{ padding: "2px 8px" }}>Repeats: {point.p2}</td>
                                             <td style={{ padding: "2px 8px" }}>{numToCommands[point.cmd]}</td>
                                         </tr>
                                     )
-                                } 
-                                else if (!showJump && point.cmd != Commands.jump){
+                                }
+                                else if (point.cmd != Commands.jump) {
                                     return (
                                         <tr key={index}>
-                                            <td style={{ padding: "2px 8px" }} onMouseDown={()=>highlightMarker(point)}>{index + 1}</td>
+                                            <td style={{ padding: "2px 8px" }} onMouseEnter={()=>point["highlight"]=true} onMouseLeave={()=>point["highlight"]=false}>{index + 1}</td>
                                             <td style={{ padding: "2px 8px" }}>
                                                 {editableIndex === index ? (
                                                     <input
@@ -421,7 +402,7 @@ const FlightPlanToolbar = props => {
                                                     />
                                                         
                                                 ) : (
-                                                    point.lat
+                                                    point.lat==undefined ? point.lat : point.lat.toFixed(8)
                                                 )}
                                             </td>
                                             <td style={{ padding: "2px 8px" }}>
@@ -434,7 +415,7 @@ const FlightPlanToolbar = props => {
                                                         style={{width: "100px"}}
                                                     />
                                                 ) : (
-                                                    point.lng
+                                                    point.lng==undefined ? point.lng : point.lng.toFixed(8)
                                                 )}
                                             </td>
                                             <td style={{ padding: "2px 8px" }}>
@@ -447,7 +428,7 @@ const FlightPlanToolbar = props => {
                                                         style={{width: "100px"}}
                                                     />
                                                 ) : (
-                                                    point.alt
+                                                    point.alt==undefined ? point.alt : point.alt.toFixed(8)
                                                 )}
                                             </td>
                                             <td style={{ padding: "2px 8px" }}>
